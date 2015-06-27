@@ -4,6 +4,8 @@ ScrollFocusImage
 ScrollFocusImage,ios 焦点图轮播,UIScrollView图片自动轮播
 
 ## 代码添加
+self.automaticallyAdjustsScrollViewInsets = NO;
+
 
 ScrollFocus *scroller = [[ScrollFocus alloc] 
 
@@ -28,6 +30,8 @@ scroller.autoScroll = YES;
 ## XIB拖拽
 
 @property (weak, nonatomic) IBOutlet ScrollFocus *scrollerFocus;
+
+self.automaticallyAdjustsScrollViewInsets = NO;
 
 self.scrollerFocus.imageArray = @[@"0.jpg",@"1.jpg",@"2.jpg",@"3.jpg", @"4.jpg"];
 

@@ -170,7 +170,11 @@ static CGFloat SWITCH_FOCUS_IMAGE_INTERVAL = 5.0; //switch interval time
     if (targetX >= _scrollView.contentSize.width) {
         targetX = 0.0;
     }
-    [_scrollView setContentOffset:CGPointMake(targetX, 0) animated:YES] ;
+    [UIView animateWithDuration:0.4 animations:^{
+        [_scrollView setContentOffset:CGPointMake(targetX, 0) animated:NO] ;
+    } completion:^(BOOL finished) {
+        
+    }];
     _pageControl.currentPage = (int)(_scrollView.contentOffset.x / _scrollView.frame.size.width);
 }
 - (void)switchFocusImageItems
