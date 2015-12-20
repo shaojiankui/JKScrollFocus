@@ -205,7 +205,9 @@
     [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(switchFocusImageItems) object:nil];
     
     _currentPageIndex++;
-    _currentPageIndex = _currentPageIndex % [self.imageArray count];
+    if ([self.imageArray count]>0) {
+        _currentPageIndex = _currentPageIndex % [self.imageArray count];
+    }
     
     CATransition *animation = [CATransition animation];
     [animation setDuration:0.35f];
