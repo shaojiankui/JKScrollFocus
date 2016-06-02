@@ -33,8 +33,7 @@
 }
 -(void)buidView{
     self.userInteractionEnabled = YES;
-    self.imageArray = [NSArray array];
-    self.titleArray = [NSArray array];
+
     self.backgroundColor = [UIColor grayColor];
     //_scrollView
     [self addSubview:self.scrollView];
@@ -52,7 +51,7 @@
     _noteView.frame =CGRectMake(0, self.bounds.size.height-33,self.bounds.size.width,33);
     _scrollView.contentSize =CGSizeMake(self.frame.size.width*3, self.frame.size.height);
     
-    float pageControlWidth = ([self.imageArray count]) * 10.0f + 60.f;
+    float pageControlWidth = ([self.items count]) * 10.0f + 60.f;
     float pagecontrolHeight = 20.0f;
     _pageControl.frame = CGRectMake(self.frame.size.width - pageControlWidth, 6, pageControlWidth, pagecontrolHeight);
      _noteTitle.frame = CGRectMake(5, 6, self.frame.size.width - pageControlWidth - 15, 20);
@@ -100,31 +99,41 @@
     return _threeItems;
 }
 #pragma data handle
--(void)setImageArray:(NSArray *)imageArray{
-    _imageArray = imageArray;
+-(void)setItems:(NSArray *)items{
+    _items = items;
     _currentPageIndex = 0;
     [self setNeedsDisplay];
     [self reloadData];
+    [self moveToPage:_currentPageIndex];
+
 }
 -(void)reloadData{
     [_scrollView.subviews makeObjectsPerformSelector:@selector(removeFromSuperview)];
-    if (self.imageArray==nil ||[self.imageArray count]==0) {
+    if (self.items==nil ||[self.items count]==0) {
         _scrollView.contentSize = CGSizeZero;
         return;
     }
   
+    if (!_titleForJKScrollFocusItem) {
+        _pageControl.hidden =YES;
+        _noteTitle.text = @"";
+    }else{
+        _pageControl.hidden = NO;
+        _pageControl.numberOfPages = [self.items count];
+        _noteTitle.text = _titleForJKScrollFocusItem([self.items firstObject],self.noteTitle);
+    }
     [self.threeItems removeAllObjects];
-    [self.threeItems addObject:[self.imageArray objectAtIndex:[self getNextPage:_currentPageIndex-1]]];
-    [self.threeItems addObject:[self.imageArray objectAtIndex:_currentPageIndex]];
-    [self.threeItems addObject:[self.imageArray objectAtIndex:[self getNextPage:_currentPageIndex+1]]];
+    [self.threeItems addObject:[self.items objectAtIndex:[self getNextPage:_currentPageIndex-1]]];
+    [self.threeItems addObject:[self.items objectAtIndex:_currentPageIndex]];
+    [self.threeItems addObject:[self.items objectAtIndex:[self getNextPage:_currentPageIndex+1]]];
     
     _scrollView.contentSize = CGSizeMake(CGRectGetWidth(self.bounds) * 3, self.frame.size.height);
     for (int i = 0; i < [self.threeItems count]; i++) {
         UIImageView *currentView=[[UIImageView alloc] initWithFrame:CGRectMake(CGRectGetWidth(self.bounds)*i, 0, CGRectGetWidth(self.bounds), CGRectGetHeight(self.bounds))];
         currentView.userInteractionEnabled=YES;
         currentView.tag = 1;
-        if (_downloadFocusItem) {
-            _downloadFocusItem(_threeItems[i],currentView);
+        if (_downloadJKScrollFocusItem) {
+            _downloadJKScrollFocusItem(_threeItems[i],currentView);
         }
 //        currentView.image = [UIImage imageNamed:_threeItems[i]];
         UITapGestureRecognizer *tap =[[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(imageItemPressed:)];
@@ -140,8 +149,8 @@
 {
     NSInteger index;
     if (currentIndex==-1) {
-        index = self.imageArray.count-1;
-    }else if (currentIndex==self.imageArray.count){
+        index = self.items.count-1;
+    }else if (currentIndex==self.items.count){
         index = 0;
     }else{
         index = currentIndex;
@@ -149,19 +158,7 @@
     return index;
 }
 
--(void)setTitleArray:(NSArray *)titleArray{
-    _titleArray = titleArray;
-    if (self.titleArray==nil ||[self.titleArray count]==0) {
-        _pageControl.hidden =YES;
-        _noteTitle.text = @"";
-        return;
-    }
-    
-    _pageControl.hidden = NO;
-    NSInteger pageCount = [self.titleArray count];
-    _pageControl.numberOfPages = (pageCount);
-    _noteTitle.text = [self.titleArray firstObject];
-}
+
 
 
 #pragma mark - UIScrollViewDelegate
@@ -182,11 +179,7 @@
         [self reloadData];
     }
     
-    if (self.titleArray!=nil && [self.titleArray count]>_currentPageIndex) {
-        _noteTitle.text = self.titleArray[_currentPageIndex];
-    }
-    _pageControl.currentPage = _currentPageIndex;
-
+    [self moveToPage:_currentPageIndex];
 }
 - (void)scrollViewWillBeginDragging:(UIScrollView *)scrollView
 {
@@ -198,6 +191,16 @@
 {
     [scrollView setContentOffset:CGPointMake(CGRectGetWidth(self.bounds), 0) animated:YES];
 }
+- (void)moveToPage:(NSInteger)page{
+    if (_titleForJKScrollFocusItem  && [self.items count]>page) {
+        _noteTitle.text = _titleForJKScrollFocusItem([self.items objectAtIndex:page],_noteTitle);
+    }
+    
+    _pageControl.currentPage = page;
+    if (_autoScroll) {
+        [self performSelector:@selector(switchFocusImageItems) withObject:nil afterDelay:SWITCH_FOCUS_IMAGE_INTERVAL];
+    }
+}
 #pragma mark - ScrollView Next
 
 - (void)switchFocusImageItems
@@ -205,8 +208,8 @@
     [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(switchFocusImageItems) object:nil];
     
     _currentPageIndex++;
-    if ([self.imageArray count]>0) {
-        _currentPageIndex = _currentPageIndex % [self.imageArray count];
+    if ([self.items count]>0) {
+        _currentPageIndex = _currentPageIndex % [self.items count];
     }
     
     CATransition *animation = [CATransition animation];
@@ -219,10 +222,7 @@
     [_scrollView.layer addAnimation:animation forKey:nil];
     
     [self reloadData];
-    _pageControl.currentPage = _currentPageIndex;
-    if (_autoScroll) {
-        [self performSelector:@selector(switchFocusImageItems) withObject:nil afterDelay:SWITCH_FOCUS_IMAGE_INTERVAL];
-    }
+    [self moveToPage:_currentPageIndex];
 }
 - (void)setAutoScroll:(BOOL)enable
 {
@@ -233,23 +233,25 @@
     }
 }
 #pragma mark --block
--(void)didSelectScrollFocusItem:(DidSelectScrollFocusItem)didSelectScrollFocusItem{
-    if(didSelectScrollFocusItem){
-        _didSelectScrollFocusItem = [didSelectScrollFocusItem copy];
-    }
+-(void)didSelectJKScrollFocusItem:(DidSelectJKScrollFocusItem)didSelectJKScrollFocusItem;{
+    _didSelectJKScrollFocusItem= [didSelectJKScrollFocusItem copy];
 }
--(void)downloadFocusItem:(DownloadFocusItem)downloadFocusItem{
-    _downloadFocusItem = [downloadFocusItem copy];
+-(void)downloadJKScrollFocusItem:(DownloadJKScrollFocusItem)downloadJKScrollFocusItem{
+    _downloadJKScrollFocusItem = [downloadJKScrollFocusItem copy];
     _currentPageIndex = 0;
     [self setNeedsDisplay];
     [self reloadData];
 }
+
+-(void)titleForJKScrollFocusItem:(TitleForJKScrollFocusItem)titleForJKScrollFocusItem{
+    _titleForJKScrollFocusItem = [titleForJKScrollFocusItem copy];
+}
 #pragma mark --click handle
 - (void)imageItemPressed:(UITapGestureRecognizer *)sender
 {
-    NSLog(@"%ld",sender.view.tag);
-    if (_didSelectScrollFocusItem) {
-       _didSelectScrollFocusItem(_currentPageIndex);
+//    NSLog(@"%ld",sender.view.tag);
+    if (_didSelectJKScrollFocusItem) {
+       _didSelectJKScrollFocusItem([self.items objectAtIndex:_currentPageIndex],_currentPageIndex);
     }
 }
 
