@@ -7,48 +7,59 @@
 //
 
 #import <UIKit/UIKit.h>
+#import <QuartzCore/QuartzCore.h>
 typedef void (^DidSelectJKScrollFocusItem)(id item,NSInteger index);
 typedef void (^DownloadJKScrollFocusItem)(id item,UIImageView *currentImageView);
-typedef NSString * (^TitleForJKScrollFocusItem)(id item,UILabel *currentLabel);
+typedef void (^DidChangeJKScrollFocusItem)(id item,NSInteger index);
+
+typedef CAAnimation * (^AnimationForJKScrollFocusSwitch)(UIScrollView *scrollView,NSInteger index);
 
 @interface JKScrollFocus : UIView<UIScrollViewDelegate> {
     DidSelectJKScrollFocusItem _didSelectJKScrollFocusItem;
     DownloadJKScrollFocusItem _downloadJKScrollFocusItem;
-    TitleForJKScrollFocusItem _titleForJKScrollFocusItem;
+    DidChangeJKScrollFocusItem _didChangeJKScrollFocusItem;
+    AnimationForJKScrollFocusSwitch _animationForJKScrollFocusSwitch;
     NSInteger _currentPageIndex;
 }
 /**
- *  @author Jakey, 16-06-02 18:06:48
  *
  *  数据源
  */
-@property (nonatomic, strong)NSArray *items;
+@property (nonatomic, strong) NSArray *items;
 /**
- *  @author Jakey, 16-06-02 18:06:55
  *
- *  自动轮播
+ *  自动轮播切换
  */
-@property (nonatomic, assign) BOOL autoScroll;
+@property (nonatomic, assign) BOOL autoSwitch;
 /**
- *  @author Jakey, 16-06-02 18:06:17
+ *
+ *  切换时间间隔 默认五秒
+ */
+@property (nonatomic, assign) NSTimeInterval interval;
+
+/**
  *
  *  点击回调
  *
  */
--(void)didSelectJKScrollFocusItem:(DidSelectJKScrollFocusItem)didSelectJKScrollFocusItem;
+- (void)didSelectJKScrollFocusItem:(DidSelectJKScrollFocusItem)didSelectJKScrollFocusItem;
 /**
- *  @author Jakey, 16-06-02 18:06:17
  *
  *  下载/加载对应图片的回调
  *
  */
--(void)downloadJKScrollFocusItem:(DownloadJKScrollFocusItem)downloadJKScrollFocusItem;
+- (void)downloadJKScrollFocusItem:(DownloadJKScrollFocusItem)downloadJKScrollFocusItem;
 /**
- *  @author Jakey, 16-06-02 18:06:39
  *
- *  标题回调
+ *  当前数据改变回调
  *
  */
--(void)titleForJKScrollFocusItem:(TitleForJKScrollFocusItem)titleForJKScrollFocusItem;
+- (void)didChangeJKScrollFocusItem:(DidChangeJKScrollFocusItem)didChangeJKScrollFocusItem;
+/**
+ *
+ *  自定义切换动画
+ *
+ */
+- (void)animationForJKScrollFocusSwitch:(AnimationForJKScrollFocusSwitch)animationForJKScrollFocusSwitch;
 
 @end

@@ -13,5 +13,8 @@
 - (IBAction)reloadData:(id)sender;
 
 @property (weak, nonatomic) IBOutlet JKScrollFocus *scrollerFocus;
+@property (weak, nonatomic) IBOutlet UILabel *scrollerFocuesLabel;
+@property (weak, nonatomic) IBOutlet UIPageControl *scrolllerFocusPageControl;
+@property (weak, nonatomic) IBOutlet UIPageControl *scrolllerFocusPageControl2;
 
 @end

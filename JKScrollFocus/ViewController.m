@@ -32,7 +32,7 @@
     self.automaticallyAdjustsScrollViewInsets = NO;
     self.navigationController.navigationBarHidden = YES;
 
-    JKScrollFocus *scroller = [[JKScrollFocus alloc] initWithFrame:CGRectMake(0, 100, 320, 120)];
+    JKScrollFocus *scroller = [[JKScrollFocus alloc] initWithFrame:CGRectMake(0, 20, [UIScreen mainScreen].bounds.size.width, 120)];
     //imageArray 也可以传入网络图片地址数组
     //这里我使用SDWebImage进行加载网络图片,可以使用自己的方法
 
@@ -53,9 +53,11 @@
         n.title = [titleArray objectAtIndex:i];
         [firstArray addObject:n];
     }
-    
+
     scroller.items = firstArray;
-    scroller.autoScroll = YES;
+    scroller.autoSwitch = YES;
+    scroller.interval = 3.0;
+
     [scroller didSelectJKScrollFocusItem:^(id item,NSInteger index) {
         NSLog(@"click %ld,item:%@",index,item);
     }];
@@ -64,9 +66,18 @@
         News *n = item;
         [currentImageView sd_setImageWithURL:[NSURL URLWithString:n.imageURL] placeholderImage:nil];
     }];
-    [scroller titleForJKScrollFocusItem:^NSString *(id item, UILabel *currentLabel) {
-        News *n = item;
-        return n.title;
+    [scroller didChangeJKScrollFocusItem:^ (id item,NSInteger index) {
+//        News *n = item;
+//        NSLog(@"index:%zd",index);
+    }];
+    [scroller animationForJKScrollFocusSwitch:^CAAnimation *(UIScrollView *scrollView, NSInteger index) {
+        CATransition *animationT = [CATransition animation];
+        [animationT setDuration:0.35f];
+        [animationT setFillMode:kCAFillModeForwards];
+        [animationT setTimingFunction:[CAMediaTimingFunction functionWithName:kCAMediaTimingFunctionEaseOut]];
+        [animationT setType:kCATransitionPush];
+        [animationT setSubtype:kCATransitionFromRight];
+        return animationT;
     }];
     [self.view addSubview:scroller];
 
@@ -82,22 +93,30 @@
         n.title = [secondTitleArray objectAtIndex:i];
         [secondArray addObject:n];
     }
+    //设置pagePageControl
+    self.scrolllerFocusPageControl.numberOfPages = [secondArray count];
+    //只显示3个点的PageControl
+    self.scrolllerFocusPageControl2.numberOfPages = ([secondArray count]<3)?[secondArray count]:3;
 
     self.scrollerFocus.items = secondArray;
-    self.scrollerFocus.autoScroll = YES;
+    self.scrollerFocus.autoSwitch = YES;
+    
     [self.scrollerFocus didSelectJKScrollFocusItem:^(id item,NSInteger index) {
         NSLog(@"click %ld,item:%@",index,item);
     }];
-    [self.scrollerFocus titleForJKScrollFocusItem:^NSString *(id item, UILabel *currentLabel) {
+    [self.scrollerFocus didChangeJKScrollFocusItem:^(id item,NSInteger index) {
         News *n = item;
-        return n.title;
+        NSLog(@"index:%zd",index);
+        //设置标题联动
+        self.scrollerFocuesLabel.text = n.title;
+        self.scrolllerFocusPageControl.currentPage = index;
+        //只显示3个点的PageControl
+        self.scrolllerFocusPageControl2.currentPage = index%self.scrolllerFocusPageControl2.numberOfPages;
     }];
     [self.scrollerFocus downloadJKScrollFocusItem:^(id item, UIImageView *currentImageView) {
         News *n = item;
         currentImageView.image = [UIImage imageNamed:n.imageURL];
     }];
-
-    // Do any additional setup after loading the view, typically from a nib.
 }
 
 - (IBAction)reloadData:(id)sender {

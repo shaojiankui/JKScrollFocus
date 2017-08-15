@@ -9,11 +9,8 @@
 
 #import "JKScrollFocus.h"
 @interface JKScrollFocus ()
-@property (nonatomic, strong)UIScrollView *scrollView;
-@property (nonatomic, strong)UIPageControl *pageControl;
-@property (nonatomic, strong)UILabel *noteTitle;
-@property (nonatomic, strong)UIView *noteView;
-@property (nonatomic, strong)NSMutableArray *threeItems;
+@property (nonatomic, strong) UIScrollView *scrollView;
+@property (nonatomic, strong) NSMutableArray *threeItems;
 @end
 
 @implementation JKScrollFocus
@@ -27,39 +24,25 @@
     return self;
 }
 
--(void)awakeFromNib{
+- (void)awakeFromNib{
     [super awakeFromNib];
     [self buidView];
 }
--(void)buidView{
+- (void)buidView{
     self.userInteractionEnabled = YES;
 
     self.backgroundColor = [UIColor grayColor];
     //_scrollView
-    [self addSubview:self.scrollView];
-    //_noteView
-    [self addSubview:self.noteView];
-    //_pageControl
-    [_noteView addSubview:self.pageControl];
-    //_noteTitle
-    [_noteView addSubview:self.noteTitle];
+    [self insertSubview:self.scrollView atIndex:0];
     self.clipsToBounds = YES;
-    
 }
--(void)layoutSubviews{
+- (void)layoutSubviews{
     _scrollView.frame = CGRectMake(0, 0, self.frame.size.width, self.frame.size.height);
-    _noteView.frame =CGRectMake(0, self.bounds.size.height-33,self.bounds.size.width,33);
     _scrollView.contentSize =CGSizeMake(self.frame.size.width*3, self.frame.size.height);
-    
-    float pageControlWidth = ([self.items count]) * 10.0f + 60.f;
-    float pagecontrolHeight = 20.0f;
-    _pageControl.frame = CGRectMake(self.frame.size.width - pageControlWidth, 6, pageControlWidth, pagecontrolHeight);
-     _noteTitle.frame = CGRectMake(5, 6, self.frame.size.width - pageControlWidth - 15, 20);
-
     [self reloadData];
 }
 #pragma getter method
--(UIScrollView *)scrollView{
+- (UIScrollView *)scrollView{
     if (!_scrollView) {
         _scrollView = [[UIScrollView alloc]initWithFrame:CGRectZero];
         _scrollView.pagingEnabled = YES;
@@ -70,57 +53,31 @@
     }
     return _scrollView;
 }
--(UIView *)noteView{
-    if (!_noteView) {
-        _noteView = [[UIView alloc] initWithFrame:CGRectZero];
-        [_noteView setBackgroundColor:[UIColor blackColor]];
-    }
-    return _noteView;
-}
--(UIPageControl *)pageControl{
-    if (!_pageControl) {
-        _pageControl=[[UIPageControl alloc]initWithFrame:CGRectZero];
-    }
-    return _pageControl;
-}
--(UILabel *)noteTitle{
-    if (!_noteTitle) {
-        _noteTitle=[[UILabel alloc] initWithFrame:CGRectZero];
-        [_noteTitle setBackgroundColor:[UIColor clearColor]];
-        _noteTitle.textColor = [UIColor whiteColor];
-        [_noteTitle setFont:[UIFont systemFontOfSize:13]];
-    }
-    return _noteTitle;
-}
--(NSMutableArray *)threeItems{
+- (NSMutableArray *)threeItems{
     if(!_threeItems){
         _threeItems  = [NSMutableArray array];
     }
     return _threeItems;
 }
 #pragma data handle
--(void)setItems:(NSArray *)items{
+- (void)setItems:(NSArray *)items{
     _items = items;
     _currentPageIndex = 0;
-    [self setNeedsDisplay];
-    [self reloadData];
+    [self setNeedsLayout];
     [self moveToPage:_currentPageIndex];
-
 }
--(void)reloadData{
+- (void)setInterval:(NSTimeInterval)interval{
+    _interval = interval;
+}
+- (void)reloadData{
     [_scrollView.subviews makeObjectsPerformSelector:@selector(removeFromSuperview)];
     if (self.items==nil ||[self.items count]==0) {
         _scrollView.contentSize = CGSizeZero;
         return;
     }
-  
-    if (!_titleForJKScrollFocusItem) {
-        _pageControl.hidden =YES;
-        _noteTitle.text = @"";
-    }else{
-        _pageControl.hidden = NO;
-        _pageControl.numberOfPages = [self.items count];
-        _noteTitle.text = _titleForJKScrollFocusItem([self.items firstObject],self.noteTitle);
+    
+    if (_didChangeJKScrollFocusItem) {
+        _didChangeJKScrollFocusItem([self.items firstObject],0);
     }
     [self.threeItems removeAllObjects];
     [self.threeItems addObject:[self.items objectAtIndex:[self getNextPage:_currentPageIndex-1]]];
@@ -135,7 +92,7 @@
         if (_downloadJKScrollFocusItem) {
             _downloadJKScrollFocusItem(_threeItems[i],currentView);
         }
-//        currentView.image = [UIImage imageNamed:_threeItems[i]];
+        //currentView.image = [UIImage imageNamed:_threeItems[i]];
         UITapGestureRecognizer *tap =[[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(imageItemPressed:)];
         [tap setNumberOfTapsRequired:1];
         [tap setNumberOfTouchesRequired:1];
@@ -145,7 +102,7 @@
     [_scrollView setContentOffset:CGPointMake(CGRectGetWidth(self.bounds), 0)];
 }
 
--(NSInteger)getNextPage:(NSInteger)currentIndex
+- (NSInteger)getNextPage:(NSInteger)currentIndex
 {
     NSInteger index;
     if (currentIndex==-1) {
@@ -157,9 +114,6 @@
     }
     return index;
 }
-
-
-
 
 #pragma mark - UIScrollViewDelegate
 - (void)scrollViewDidScroll:(UIScrollView *)scrollView {
@@ -183,7 +137,7 @@
 }
 - (void)scrollViewWillBeginDragging:(UIScrollView *)scrollView
 {
-    if (_autoScroll) {
+    if (_autoSwitch) {
         [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(switchFocusImageItems) object:nil];
     }
 }
@@ -192,17 +146,14 @@
     [scrollView setContentOffset:CGPointMake(CGRectGetWidth(self.bounds), 0) animated:YES];
 }
 - (void)moveToPage:(NSInteger)page{
-    if (_titleForJKScrollFocusItem  && [self.items count]>page) {
-        _noteTitle.text = _titleForJKScrollFocusItem([self.items objectAtIndex:page],_noteTitle);
+    if (_didChangeJKScrollFocusItem  && [self.items count]>page) {
+       _didChangeJKScrollFocusItem([self.items objectAtIndex:page],page);
     }
-    
-    _pageControl.currentPage = page;
-    if (_autoScroll) {
-        [self performSelector:@selector(switchFocusImageItems) withObject:nil afterDelay:SWITCH_FOCUS_IMAGE_INTERVAL];
+    if (_autoSwitch) {
+        [self performSelector:@selector(switchFocusImageItems) withObject:nil afterDelay:(_interval>0)?:SWITCH_FOCUS_IMAGE_INTERVAL];
     }
 }
 #pragma mark - ScrollView Next
-
 - (void)switchFocusImageItems
 {
     [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(switchFocusImageItems) object:nil];
@@ -212,39 +163,51 @@
         _currentPageIndex = _currentPageIndex % [self.items count];
     }
     
-    CATransition *animation = [CATransition animation];
-    [animation setDuration:0.35f];
-    [animation setFillMode:kCAFillModeForwards];
-    [animation setTimingFunction:[CAMediaTimingFunction functionWithName:kCAMediaTimingFunctionEaseOut]];
-    [animation setType:kCATransitionPush];
-    [animation setSubtype:kCATransitionFromRight];
-    
+    CAAnimation *animation;
+    if (_animationForJKScrollFocusSwitch) {
+        animation = _animationForJKScrollFocusSwitch(_scrollView,_currentPageIndex);
+    }else{
+        CATransition *animationT = [CATransition animation];
+        [animationT setDuration:0.35f];
+        [animationT setFillMode:kCAFillModeForwards];
+        [animationT setTimingFunction:[CAMediaTimingFunction functionWithName:kCAMediaTimingFunctionEaseOut]];
+        [animationT setType:kCATransitionPush];
+        [animationT setSubtype:kCATransitionFromRight];
+        animation = animationT;
+    }
+   
     [_scrollView.layer addAnimation:animation forKey:nil];
     
     [self reloadData];
     [self moveToPage:_currentPageIndex];
 }
-- (void)setAutoScroll:(BOOL)enable
+- (void)setAutoSwitch:(BOOL)enable
 {
-    _autoScroll = enable;
+    _autoSwitch = enable;
     [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(switchFocusImageItems) object:nil];
-    if (_autoScroll) {
+    if (_autoSwitch) {
         [self performSelector:@selector(switchFocusImageItems) withObject:nil afterDelay:SWITCH_FOCUS_IMAGE_INTERVAL];
     }
 }
 #pragma mark --block
--(void)didSelectJKScrollFocusItem:(DidSelectJKScrollFocusItem)didSelectJKScrollFocusItem;{
+- (void)didSelectJKScrollFocusItem:(DidSelectJKScrollFocusItem)didSelectJKScrollFocusItem;{
     _didSelectJKScrollFocusItem= [didSelectJKScrollFocusItem copy];
+    [self setNeedsLayout];
 }
--(void)downloadJKScrollFocusItem:(DownloadJKScrollFocusItem)downloadJKScrollFocusItem{
+- (void)downloadJKScrollFocusItem:(DownloadJKScrollFocusItem)downloadJKScrollFocusItem{
     _downloadJKScrollFocusItem = [downloadJKScrollFocusItem copy];
     _currentPageIndex = 0;
-    [self setNeedsDisplay];
-    [self reloadData];
+    [self setNeedsLayout];
 }
 
--(void)titleForJKScrollFocusItem:(TitleForJKScrollFocusItem)titleForJKScrollFocusItem{
-    _titleForJKScrollFocusItem = [titleForJKScrollFocusItem copy];
+- (void)didChangeJKScrollFocusItem:(DidChangeJKScrollFocusItem)didChangeJKScrollFocusItem{
+    _didChangeJKScrollFocusItem = [didChangeJKScrollFocusItem copy];
+    [self setNeedsLayout];
+}
+- (void)animationForJKScrollFocusSwitch:(AnimationForJKScrollFocusSwitch)animationForJKScrollFocusSwitch{
+    _animationForJKScrollFocusSwitch = [animationForJKScrollFocusSwitch copy];
+    _currentPageIndex = 0;
+    [self setNeedsLayout];
 }
 #pragma mark --click handle
 - (void)imageItemPressed:(UITapGestureRecognizer *)sender
